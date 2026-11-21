@@ -12,10 +12,16 @@ import io
 import base64
 import time
 import numpy as np
+import gradio as gr
 
 # 解决中文显示问题
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'SimSun', 'Arial Unicode MS']  # 优先使用的中文字体
 plt.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+
+# 图片保存目录（绝对路径）
+IMAGE_SAVE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'image_show')
+# 将图片目录注册为 gradio 静态目录，使 WebUI 的 /file= 路由可以访问生成的图表
+gr.set_static_paths(paths=[IMAGE_SAVE_DIR])
 
 # 定义资源文件根目录
 ROOT_RESOURCE = os.path.join(os.path.dirname(__file__), 'resource')
@@ -125,8 +131,11 @@ class ExcSQLTool(BaseTool):
         save_path = os.path.join(save_dir, filename)
         # 生成图表
         generate_chart_png(df, save_path)
-        img_path = os.path.join('image_show', filename)
-        img_md = f'![柱状图]({img_path})'
+        # 通过 gradio 的 /file= 路由返回图片，页面才能加载到本地生成的图表
+        # 注意：项目路径中包含空格（如 "Function Calling与MCP"），必须对路径做 URL 编码，
+        # 否则 Markdown 解析图片链接时会在空格处截断，导致图片显示为原始文本
+        from urllib.parse import quote
+        img_md = f'![柱状图](/file={quote(save_path)})'
         return f"{md}\n\n{img_md}"
 
 # ========== 通用可视化函数 ========== 
@@ -206,17 +215,17 @@ def init_agent_service():
             }
             }
             , 
-            "tavily-mcp": {
-            "args": [
-                "-y",
-                "tavily-mcp@0.1.4"
-            ],
-            "autoApprove": [],
-            "command": "npx",
-            "env": {
-                "TAVILY_API_KEY": os.getenv('TAVILY_API_KEY', '')
-            }
-            }
+            # "tavily-mcp": {
+            # "args": [
+            #     "-y",
+            #     "tavily-mcp@0.1.4"
+            # ],
+            # "autoApprove": [],
+            # "command": "npx",
+            # "env": {
+            #     "TAVILY_API_KEY": os.getenv('TAVILY_API_KEY', '')
+            # }
+            # }
                 
         }
         }
@@ -286,6 +295,7 @@ def app_gui():
         print("正在启动 Web 界面...")
         # 初始化助手
         bot = init_agent_service()
+        print('bot=', bot)
         # 配置聊天界面，列举3个典型门票查询问题
         chatbot_config = {
             'prompt.suggestions': [
