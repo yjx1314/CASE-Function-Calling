@@ -203,7 +203,6 @@ def init_agent_service():
             "command": "npx",
             "env": {
                 # "AMAP_MAPS_API_KEY": os.getenv("AMAP_MAPS_API_KEY", "")
-                "AMAP_MAPS_API_KEY": "937ca5139fdd936397d694447db6ef0d"
             }
             }
             , 
